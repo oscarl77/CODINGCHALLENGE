@@ -2,7 +2,7 @@ import unittest
 import tempfile
 import os
 from unittest.mock import patch, mock_open
-from parsers.meter_reading_parser import MeterReadingParser
+from src.meter_reading_parser import MeterReadingParser
 
 class TestMeterReadingParser(unittest.TestCase):
 
@@ -33,25 +33,18 @@ class TestMeterReadingParser(unittest.TestCase):
         "METER|031|\nREADING|032|634.0|20221108|F|\n"
         "METER|033|\nREADING|034|1205.9|20221103|F|\n"
         "FOOTER|")  
-        # file 3 remains unused due to the solution for duplicate readings
-        # not being implemented.
         temp_file_content_3 = ("HEADER|\n"
-        "METER|035|\nREADING|036|818.0|20221009|V|\n"
-        "METER|037|\nREADING|038|818.0|20220218|F|\n"
-        "FOOTER|")
-        temp_file_content_4 = ("HEADER|\n"
         "METER|039|\nREADING|040|987.4|20220417|V|\n"
         "FOOTER|")
-        temp_file_content_5 = ("HEADER|\n"
+        temp_file_content_4 = ("HEADER|\n"
         "FOOTER|")
-        temp_file_content_6 = ("")
+        temp_file_content_5 = ("")
         self.temp_file_contents = [temp_file_content_0,
                               temp_file_content_1, 
                               temp_file_content_2,
                               temp_file_content_3,
                               temp_file_content_4,
-                              temp_file_content_5,
-                              temp_file_content_6]
+                              temp_file_content_5]
         for contents in self.temp_file_contents:
             temp_file = tempfile.NamedTemporaryFile(mode='w', delete=False)
             temp_file.write(contents)
@@ -73,7 +66,7 @@ class TestMeterReadingParser(unittest.TestCase):
         temp_file_path = temp_file.name
         with patch("builtins.open", mock_open(read_data=temp_file_content)):
             meter_reading_parser = MeterReadingParser(temp_file_path)
-            result = meter_reading_parser.parse_meter_readings()
+            result = meter_reading_parser.parse_file()
             self.assertEqual(result, expected_output_0)
         os.remove(temp_file_path)
         
@@ -90,7 +83,7 @@ class TestMeterReadingParser(unittest.TestCase):
         temp_file_path = temp_file.name
         with patch("builtins.open", mock_open(read_data=temp_file_content)):
             meter_reading_parser = MeterReadingParser(temp_file_path)
-            result = meter_reading_parser.parse_meter_readings()
+            result = meter_reading_parser.parse_file()
             self.assertEqual(result, expected_output_1)
         os.remove(temp_file_path)
 
@@ -107,59 +100,57 @@ class TestMeterReadingParser(unittest.TestCase):
         temp_file_path = temp_file.name
         with patch("builtins.open", mock_open(read_data=temp_file_content)):
             meter_reading_parser = MeterReadingParser(temp_file_path)
-            result = meter_reading_parser.parse_meter_readings()
+            result = meter_reading_parser.parse_file()
             self.assertEqual(result, expected_output_2)
         os.remove(temp_file_path)
 
     def test_meter_reading_parser_one_reading(self):
-        expected_output_4 = {'Meter count': 1,
+        expected_output_3 = {'Meter count': 1,
                              'Sum of valid meter readings': 987.4,
                              'Sum of invalid meter readings': 0,
                              'Highest valid meter reading': 987.4,
                              'Lowest valid meter reading': 987.4,
                              'Oldest meter reading': 987.4,
                              'Most recent meter reading': 987.4}
-        temp_file = self.temp_files[4][0]
-        temp_file_content = self.temp_files[4][1]
+        temp_file = self.temp_files[3][0]
+        temp_file_content = self.temp_files[3][1]
         temp_file_path = temp_file.name
         with patch("builtins.open", mock_open(read_data=temp_file_content)):
             meter_reading_parser = MeterReadingParser(temp_file_path)
-            result = meter_reading_parser.parse_meter_readings()
-            self.assertEqual(result, expected_output_4)
+            result = meter_reading_parser.parse_file()
+            self.assertEqual(result, expected_output_3)
         os.remove(temp_file_path)
     
     def test_meter_reading_parser_no_meter(self):
-        expected_output_5 = {'Meter count': 0,
+        expected_output_4 = {'Meter count': 0,
                             'Sum of valid meter readings': 0,
                             'Sum of invalid meter readings': 0,
                             'Highest valid meter reading': 'N/A',
                             'Lowest valid meter reading': 'N/A',
                             'Oldest meter reading': 'N/A',
                             'Most recent meter reading': 'N/A'}
+        temp_file = self.temp_files[4][0]
+        temp_file_content = self.temp_files[4][1]
+        temp_file_path = temp_file.name
+        with patch("builtins.open", mock_open(read_data=temp_file_content)):
+            meter_reading_parser = MeterReadingParser(temp_file_path)
+            result = meter_reading_parser.parse_file()
+            self.assertEqual(result, expected_output_4)
+        os.remove(temp_file_path)
+
+    def test_meter_reading_parser_empty_flow(self):
+        expected_output_5 = {'Meter count': 0,
+                           'Sum of valid meter readings': 0,
+                           'Sum of invalid meter readings': 0,
+                           'Highest valid meter reading': 'N/A',
+                           'Lowest valid meter reading': 'N/A',
+                           'Oldest meter reading': 'N/A',
+                           'Most recent meter reading': 'N/A'}
         temp_file = self.temp_files[5][0]
         temp_file_content = self.temp_files[5][1]
         temp_file_path = temp_file.name
         with patch("builtins.open", mock_open(read_data=temp_file_content)):
             meter_reading_parser = MeterReadingParser(temp_file_path)
-            result = meter_reading_parser.parse_meter_readings()
+            result = meter_reading_parser.parse_file()
             self.assertEqual(result, expected_output_5)
         os.remove(temp_file_path)
-        # this test failed, due to the time recommendation I didnt fix the error.
-
-    def test_meter_reading_parser_empty_flow(self):
-        expected_output_6 = {'Meter count': 0,
-                           'Sum of valid meter readings': 0,
-                           'Sum of invalid meter readings': 0,
-                           'Highest valid meter readings': 'N/A',
-                           'Lowest valid meter readings': 'N/A',
-                           'Oldest meter reading': 'N/A',
-                           'Most recent meter reading': 'N/A'}
-        temp_file = self.temp_files[6][0]
-        temp_file_content = self.temp_files[6][1]
-        temp_file_path = temp_file.name
-        with patch("builtins.open", mock_open(read_data=temp_file_content)):
-            meter_reading_parser = MeterReadingParser(temp_file_path)
-            result = meter_reading_parser.parse_meter_readings()
-            self.assertEqual(result, expected_output_6)
-        os.remove(temp_file_path)
-        # this test failed, due to a time recommendation I didnt fix the error.

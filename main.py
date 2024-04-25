@@ -1,13 +1,8 @@
-import argparse
-import textwrap
-from parsers.meter_reading_parser import MeterReadingParser
-
+from src.meter_readings_processor import MeterReadingsProcessor
 
 def main():
-    filename = 'flows/test_readings'
-    meter_readings = MeterReadingParser(filename)
-    meter_readings.parse_meter_readings()
-    
+    app = MeterReadingsProcessor()
+    app.run()
 
 if __name__ == "__main__":
     main()
