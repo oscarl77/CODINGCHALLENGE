@@ -10,6 +10,11 @@ class MeterReadingParser(FlowParser):
         filename (str): text file containing meter reading data.
         parsed_meter_readings (dictionary (str: str)): dictionary that will store processed 
         meter reading data.
+    
+    Methods:
+        __init__()
+        parse_file()
+        
     """
 
     def __init__(self, filename):
