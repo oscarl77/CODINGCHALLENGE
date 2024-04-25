@@ -1,26 +1,51 @@
 import re
+from parsers.flow_parser import FlowParser
 from datetime import datetime
 
-class FlowParser():
-    """Parses flow messages recieved as a text file.
+
+class MeterReadingParser(FlowParser):
+    """Class for parsing meter reading data from a flow message text file.
+
+    Attributes:
+        filename (str): text file containing meter reading data.
+        parsed_meter_readings (dictionary (str: str)): dictionary that will store processed 
+        meter reading data.
     """
 
-    def parse_meter_readings(self, filename):
-        """Parses raw meter reading data into desired dictionary format.
+    def __init__(self, filename):
+        """Initialises the instance based on the meter reading file and
+        an empty dictionary along with it.
 
         Args:
-            filename (file): text file containing meter reading data.
+            filename (str): text file containing flow message data.
+        """
+        super().__init__(filename)
+        self.parsed_meter_readings = {}
+
+    def parse_meter_readings(self):
+        """Parses raw meter reading data into desired dictionary format.
 
         Returns:
-            dictionary: Contains key-value pairs for desired metrics
+            dictionary (dict of str: str): Contains key-value pairs for desired metrics
             e.g highest meter reading.
         """
-        parsed_meter_readings = {}
         
-        with open(filename, 'r') as file:
+        with open(self.filename, 'r') as file:
             meter_reading_contents = file.read().splitlines()
+            
+            """
+            if meter_reading_contents is None:
+                meter_total = 0
+                self.parse_meter_readings['Meter count'] = 0
+                return self.parsed_meter_readings
+            """
+
         
-        meter_total  = self._get_count_of_meters(meter_reading_contents)
+        meter_total = self._get_count_of_meters(meter_reading_contents)
+        if meter_total == 0:
+            self.parsed_meter_readings['Meter count'] = meter_total
+            return self.parse_meter_readings
+
         valid_readings_sum = self._get_readings_sum(meter_reading_contents, 'V')
         invalid_readings_sum = self._get_readings_sum(meter_reading_contents, 'F')
         highest_valid_reading = self._get_highest_valid_reading(meter_reading_contents)
@@ -28,15 +53,15 @@ class FlowParser():
         oldest_reading = self._get_oldest_meter_reading(meter_reading_contents)
         newest_reading = self._get_newest_meter_reading(meter_reading_contents)
 
-        parsed_meter_readings['Meter count'] = meter_total
-        parsed_meter_readings['Sum of valid meter readings'] = valid_readings_sum
-        parsed_meter_readings['Sum of invalid meter readings'] = invalid_readings_sum
-        parsed_meter_readings['Highest meter reading'] = highest_valid_reading
-        parsed_meter_readings['Lowest meter reading'] = lowest_valid_reading
-        parsed_meter_readings['Oldest meter reading'] = oldest_reading
-        parsed_meter_readings['Most recent meter reading'] = newest_reading
+        self.parsed_meter_readings['Meter count'] = meter_total
+        self.parsed_meter_readings['Sum of valid meter readings'] = valid_readings_sum
+        self.parsed_meter_readings['Sum of invalid meter readings'] = invalid_readings_sum
+        self.parsed_meter_readings['Highest valid meter reading'] = highest_valid_reading
+        self.parsed_meter_readings['Lowest valid meter reading'] = lowest_valid_reading
+        self.parsed_meter_readings['Oldest meter reading'] = oldest_reading
+        self.parsed_meter_readings['Most recent meter reading'] = newest_reading
 
-        return parsed_meter_readings
+        return self.parsed_meter_readings
 
 
     def _get_count_of_meters(self, file_contents):
@@ -89,6 +114,8 @@ class FlowParser():
                 local_max = float(match.group(1))
                 if local_max > global_max:
                     global_max = local_max
+        if global_max == 0:
+            return 'N/A'
         return global_max
     
 
@@ -102,6 +129,8 @@ class FlowParser():
                 local_min = float(match.group(1))
                 if local_min < global_min:
                     global_min = local_min
+        if global_min == float('inf'):
+            return 'N/A'
         return global_min
     
 
@@ -122,6 +151,8 @@ class FlowParser():
             match = re.search(oldest_date_pattern, line)
             if match:
                 oldest_reading = match.group(1)
+        if oldest_reading is None:
+            return 'N/A'
         return float(oldest_reading)
 
     def _get_oldest_date(self, file_contents):
@@ -162,6 +193,8 @@ class FlowParser():
             match = re.search(newest_date_pattern, line)
             if match:
                 newest_reading = match.group(1)
+        if newest_reading is None:
+            return 'N/A'
         return float(newest_reading)
 
     def _get_newest_date(self, file_contents):
